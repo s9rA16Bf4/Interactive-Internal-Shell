@@ -53,7 +53,7 @@ IIS comes with some prebuilt functions!<br/>
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic4.png)<br/>
 <br/>
 
-<b>?</b> - This command is used to see which commands and variables which match what has already been entered
+<b>?</b> - This command is used to see which commands and variables which match that which has already been entered
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic5.png)<br/>
 <br/>
 
