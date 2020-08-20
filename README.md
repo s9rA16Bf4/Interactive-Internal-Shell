@@ -49,14 +49,14 @@ IIS is also very customizable! After running the project for the first time <b>a
 ```
 IIS comes with some prebuilt functions!<br/>
 <br/>
-<b>defined</b> - This commands shows all the commands and variables which has been set<br/>
+<b>defined</b> - This command shows all the commands and variables which has been set<br/>
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic4.png)<br/>
 <br/>
 
-<b>?</b> - This commands is used to see which commands and variables which match what has already been enterd
+<b>?</b> - This command is used to see which commands and variables which match what has already been entered
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic5.png)<br/>
 <br/>
 
-<b>shell_info</b> - This commands shows some information about the this project, and not the program in which this might be used in 
+<b>shell_info</b> - This command shows some information about the this project
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic6.png)<br/>
 <br/>
