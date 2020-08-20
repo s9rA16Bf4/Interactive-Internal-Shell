@@ -57,6 +57,6 @@ IIS comes with some prebuilt functions!<br/>
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic5.png)<br/>
 <br/>
 
-<b>shell_info</b> - This command shows some information about the this project
+<b>shell_info</b> - This command shows some information about the this project<br/>
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic6.png)<br/>
 <br/>
