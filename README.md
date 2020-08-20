@@ -35,7 +35,7 @@ IIS is also very customizable! After running the project for the first time <b>a
 
 # Program
 #name test
-#author Peter Burger
+#author Peter_Burger
 #version 1.0
 #showNameOnStart false
 #showAuthorNameOnStart false
