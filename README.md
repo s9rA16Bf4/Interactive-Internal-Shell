@@ -60,3 +60,9 @@ IIS comes with some prebuilt functions!<br/>
 <b>shell_info</b> - This command shows some information about this project<br/>
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic6.png)<br/>
 <br/>
+
+## Pass arguments to defined function
+From version 1.1 you can access values passed to the function in realtime with the new function ```getArgs(<functionName>)``` this returns a ```vector<std::string>``` which contains all the values that the user entered after the function name.<br/>
+Example <br/>
+![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic8.png)<br/>
+![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic7.png)<br/>
