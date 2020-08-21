@@ -12,7 +12,8 @@ class interactiveShell{
 		// Private and internal values
 		std::map<std::string, void(*)()> commands; // This holds the argument and the function to which it will do a callback to
 	   	std::map<std::string, std::string> variables; // The internal set of variables that the user can set
-		const std::string interactiveShellVersion = "1.0";
+		std::map<std::string, std::vector<std::string>> passedArgs; // Used to pass arguments internally to functions
+		const std::string interactiveShellVersion = "1.1";
 		const std::string interactiveShellAuthor = "@s9rA16Bf4";
 		const std::string configPath = ".iis.config";
 
@@ -33,12 +34,13 @@ class interactiveShell{
 		void readConfig();
 		bool addCommand(std::string, void(*f)());
 		bool addVariable(std::string, std::string);
-		bool matchInput(std::string);
+		bool matchInput(std::vector<std::string>);
 		void loop();
 		std::vector<std::string> split(const std::string&, const std::string&);
 		void shellInfo();
 		void definedValues();
 		void helpMark(std::string);
+		std::vector<std::string> getArgs(std::string);
 };
 
 interactiveShell::interactiveShell(){
@@ -96,10 +98,13 @@ bool interactiveShell::addVariable(std::string trigger, std::string value){
 	return toReturn;
 }
 
-bool interactiveShell::matchInput(std::string input){
+bool interactiveShell::matchInput(std::vector<std::string> input){
 	bool toReturn = false;
 	for (auto entry:this->commands){
-		if (input == entry.first){
+		if (input[0] == entry.first){
+			std::vector<std::string> passedArgs;
+			for (unsigned int i = 1; i < input.size(); i++){ passedArgs.push_back(input[i]); } // Gather all that potential arguments
+			this->passedArgs[input[0]] = passedArgs; // Add it to the "pool", it becomes the functions job to check the arguments
 			entry.second(); // Run the command
 			toReturn = true;
 			break;
@@ -108,14 +113,14 @@ bool interactiveShell::matchInput(std::string input){
 
 	if (!toReturn){ // Might it be a variable?
 		for (auto entry:this->variables){
-			if (input == entry.first){
+			if (input[0] == entry.first){
 				std::cout << entry.second << std::endl; // Print the variable value
 				toReturn = true;
 				break;
 			}
 		}
 	}
-	if (!toReturn){ std::cerr << "Error: Unknown input " << input << std::endl; }
+	if (!toReturn){ std::cerr << "Error: Unknown input " << input[0] << std::endl; }
 	return toReturn;
 }
 
@@ -130,7 +135,7 @@ void interactiveShell::loop(){
 	std::string userInput = "";	
 	
 	while(run){
-		std::cout << this->lineStarterSymbol;
+		std::cout << std::endl << this->lineStarterSymbol;
 		std::getline(std::cin, userInput);
 		std::vector<std::string> parsedLine = this->split(userInput, this->delimiterToSplitLinesWith);
 		
@@ -139,7 +144,7 @@ void interactiveShell::loop(){
 		else if (userInput.rfind("set", 0) == 0){ this->addVariable(parsedLine[1], parsedLine[2]); } // If the user wants to define a variable
 		else if (userInput == "defined"){ this->definedValues(); } // Lists all the variables and functions defined by the user
 		else if (userInput == "shell_info"){ this->shellInfo(); } // Contains some information about the project
-		else{ this->matchInput(userInput); } // Match the input to a function/variable
+		else{ this->matchInput(parsedLine); } // Match the input to a function/variable
 	}
 }
 
@@ -178,25 +183,44 @@ void interactiveShell::shellInfo(){
 void interactiveShell::helpMark(std::string line){
 	if (line.rfind("set", 0) == 0){ std::cout << "'set <variableName> <value>'. Later accessible when entering <variableName>. I.e 'set N 10'" << std::endl; }
 	else{ // We are gonna guess what the user is entering
-		std::vector<std::string> possibleCommands;
+		std::map<std::string, std::string> possibleCommands;
 		int sameAmount = 0;
-		for (auto e:this->commands){
-			for (unsigned int i = 0; i < line.size(); i++){ if (e.first[i] == line[i]){ sameAmount++; } }
-			if ((sameAmount != 0) && (-1 < line.size() - sameAmount <= 3)){ possibleCommands.push_back(e.first); }
+		for (auto e:this->commands){ // Investigating if its a command
+			for (unsigned int i = 0; i < line.size(); i++){ 
+				if (e.first[i] == line[i]){ sameAmount++; }
+				if ((i+1) >= e.first.size() && (i+1) < line.size()){ sameAmount = 0; break; } // is there more left on the user input then the amount of chars that the function has in its name?	
+			}
+			if ((sameAmount != 0) && (-1 < line.size() - sameAmount <= 3)){ possibleCommands[e.first] = "command"; }
 		}
 
-		for (auto e:this->variables){
-			for (unsigned int i = 0; i < line.size(); i++){ if (e.first[i] == line[i]){ sameAmount++; } }
-			if ((sameAmount != 0) && (-1 < line.size() - sameAmount <= 3)){ possibleCommands.push_back(e.first); }
+		for (auto e:this->variables){ // or if its a variable
+			for (unsigned int i = 0; i < line.size(); i++){
+				if (e.first[i] == line[i]){ sameAmount++; }
+				if ((i+1) >= e.first.size() && (i+1) < line.size()){ sameAmount = 0; break; }				
+			}
+			if ((sameAmount != 0) && (-1 < line.size() - sameAmount <= 3)){ possibleCommands[e.first] = "variable"; }
 		}
 
 		std::cout << "Possible commands are" << std::endl;
 		for(int i = 0; i < this->lineBreakerAmount; i++){ std::cout << this->lineBreaker; }
 		std::cout << std::endl;
-		for(int i = 0; i < possibleCommands.size(); i++){ std::cout << "* " << possibleCommands[i] << std::endl; }
-		std::cout << std::endl;		
+		for(auto e:possibleCommands){ std::cout << "* " << e.first << " [" << e.second << "]" << std::endl; }
+		std::cout << std::endl;	
 		for(int i = 0; i < this->lineBreakerAmount; i++){ std::cout << this->lineBreaker; }
 		std::cout << std::endl;		
 	}
 }
+
+std::vector<std::string> interactiveShell::getArgs(std::string functionName){
+	std::vector<std::string> passedArguments;
+	for (auto e:this->commands){ 
+		if (e.first == functionName){
+			passedArguments = this->passedArgs[functionName];
+			break;	
+		}
+	}
+	return passedArguments;
+}
+
+
 #endif
