@@ -29,41 +29,6 @@ And when the user enters ``test``<br/>
 You can also define internal variables<br/>
 ![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic3.png)<br/>
 
-IIS is also very customizable! After running the project for the first time <b>and</b> creating an iis class object, a file called .iis.config will be created. This is how it will look!
-```
-# This is how a comment looks like
+IIS is also highly customizable! After running the project for the first time <b>and</b> creating an iis class object, a file called .iis.config will be created in the local directory!
 
-# Program
-#name test
-#author Peter_Burger
-#version 1.0
-#showNameOnStart false
-#showAuthorNameOnStart false
-#showVersionOnStart false
-
-
-# Screen
-#lineStartSymbol ::
-#lineBreaker --
-#lineBreakerAmount 25
-```
-IIS comes with some prebuilt functions!<br/>
-<br/>
-<b>defined</b> - This command shows all the commands and variables which has been set<br/>
-![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic4.png)<br/>
-<br/>
-
-<b>?</b> - This command is used to see which commands and variables which match that which has already been entered
-![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic5.png)<br/>
-<br/>
-
-<b>shell_info</b> - This command shows some information about this project<br/>
-![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic6.png)<br/>
-<br/>
-
-## Pass arguments to defined function
-From version 1.1 you can access values passed to the function in realtime with the new function ```getArgs(<functionName>)``` this returns a ```vector<std::string>``` which contains all the values that the user entered after the function name.<br/>
-
-Example <br/>
-![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic8.png)<br/>
-![](https://github.com/s9rA16Bf4/InteractiveInternalShell/blob/master/pictures/pic7.png)<br/>
+I've written a lot more about the different functions of the project and how you can suite it for your needs in the wiki!
