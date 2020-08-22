@@ -9,11 +9,15 @@
 
 class interactiveShell{
 	private:
-		// Private and internal values
+		// Values that make the magic work
 		std::map<std::string, void(*)()> commands; // This holds the argument and the function to which it will do a callback to
 	   	std::map<std::string, std::string> variables; // The internal set of variables that the user can set
 		std::map<std::string, std::vector<std::string>> passedArgs; // Used to pass arguments internally to functions
-		const std::string interactiveShellVersion = "1.1";
+		std::map<std::string, std::string> returnedArgs; // This will hold all the values that a function returns
+		std::vector<std::string> history; // This will hold the commands that the user has entered in realtime
+		
+		// Const values
+		const std::string interactiveShellVersion = "1.2";
 		const std::string interactiveShellAuthor = "@s9rA16Bf4";
 		const std::string configPath = ".iis.config";
 
@@ -41,18 +45,20 @@ class interactiveShell{
 		void definedValues();
 		void helpMark(std::string);
 		std::vector<std::string> getArgs(std::string);
+		void setReturnValue(std::string, std::string);
+		std::string getReturnValue(std::string);
+		void showHistory(); // Shows the last 10 entries
+		void showHistory(std::string); // Shows the amount of entries that the user wants to see
 };
 
-interactiveShell::interactiveShell(){
-	this->readConfig();
-}
+interactiveShell::interactiveShell(){ this->readConfig(); }
 
 void interactiveShell::readConfig(){
 	std::ifstream openFile(this->configPath);
 	if (openFile.is_open()){
 		std::string line = "";
 		std::vector<std::string> fileContent;
-		while(std::getline(openFile, line)){ if (line[0] != '#' && !line.empty()){ fileContent.push_back(line); } }
+		while(std::getline(openFile, line)){ if (line[0] != '#' && !line.empty()){ fileContent.push_back(line); } } // Only keeps lines that dont start with # and are not empty
 		openFile.close();
 
 		for (std::string entry:fileContent){
@@ -100,30 +106,33 @@ bool interactiveShell::addVariable(std::string trigger, std::string value){
 
 bool interactiveShell::matchInput(std::vector<std::string> input){
 	bool toReturn = false;
-	for (auto entry:this->commands){
-		if (input[0] == entry.first){
-			std::vector<std::string> passedArgs;
-			for (unsigned int i = 1; i < input.size(); i++){ passedArgs.push_back(input[i]); } // Gather all that potential arguments
-			this->passedArgs[input[0]] = passedArgs; // Add it to the "pool", it becomes the functions job to check the arguments
-			entry.second(); // Run the command
-			toReturn = true;
-			break;
+	auto commandPos = this->commands.find(input[0]);
+	if (commandPos != this->commands.end()){
+		std::vector<std::string> passedArgs;
+		for (unsigned int i = 1; i < input.size(); i++){ // Gather all that potential arguments
+			if (input[i][0] == '$'){ // One of the inputs are a variable, so we need to get its value
+				input[i].erase(0,1); // Removes the dollar sign
+				auto variablePos = this->variables.find(input[i]); // Does it exist?
+				if (variablePos != this->variables.end()){ input[i] = variablePos->second; } // Add the value and continue
+				else{ std::cerr << "Error: Undefined variable " << input[i] << std::endl; toReturn = false; break; }
+			}
+			passedArgs.push_back(input[i]);
 		}
+		this->passedArgs[input[0]] = passedArgs; // Add it to the "pool", it becomes the functions job to check the arguments
+		commandPos->second(); // Run the command
+		toReturn = true;
 	}
 
 	if (!toReturn){ // Might it be a variable?
-		for (auto entry:this->variables){
-			if (input[0] == entry.first){
-				std::cout << entry.second << std::endl; // Print the variable value
-				toReturn = true;
-				break;
-			}
+		auto variablePos = this->variables.find(input[0]);
+		if (variablePos != this->variables.end()){
+			std::cout << variablePos->second << std::endl; // Print the variable value
+			toReturn = true;
 		}
 	}
 	if (!toReturn){ std::cerr << "Error: Unknown input " << input[0] << std::endl; }
 	return toReturn;
 }
-
 
 void interactiveShell::loop(){
 	bool run = true;
@@ -137,14 +146,18 @@ void interactiveShell::loop(){
 	while(run){
 		std::cout << std::endl << this->lineStarterSymbol;
 		std::getline(std::cin, userInput);
-		std::vector<std::string> parsedLine = this->split(userInput, this->delimiterToSplitLinesWith);
-		
-		if (userInput == "exit"){ run = false; }
-		else if (userInput.back() == '?'){ userInput.pop_back(); helpMark(userInput); } // If the user has a "question"
-		else if (userInput.rfind("set", 0) == 0){ this->addVariable(parsedLine[1], parsedLine[2]); } // If the user wants to define a variable
-		else if (userInput == "defined"){ this->definedValues(); } // Lists all the variables and functions defined by the user
-		else if (userInput == "shell_info"){ this->shellInfo(); } // Contains some information about the project
-		else{ this->matchInput(parsedLine); } // Match the input to a function/variable
+		if (!userInput.empty()){
+			this->history.push_back(userInput); // Add to history
+			std::vector<std::string> parsedLine = this->split(userInput, this->delimiterToSplitLinesWith);	
+			if (userInput == "exit"){ run = false; }
+			else if (userInput.back() == '?'){ userInput.pop_back(); helpMark(userInput); } // If the user has a "question"
+			else if ((userInput.rfind("set", 0) == 0) && parsedLine.size() == 3){ this->addVariable(parsedLine[1], parsedLine[2]); } // If the user wants to define a variable
+			else if (userInput == "defined"){ this->definedValues(); } // Lists all the variables and functions defined by the user
+			else if (userInput == "shell_info"){ this->shellInfo(); } // Contains some information about the project
+			else if (userInput == "history"){ this->showHistory(); }
+			else if (parsedLine[0] == "history"){ this->showHistory(parsedLine[1]); }
+			else{ this->matchInput(parsedLine); } // Match the input to a function/variable
+		}
 	}
 }
 
@@ -181,46 +194,68 @@ void interactiveShell::shellInfo(){
 }
 
 void interactiveShell::helpMark(std::string line){
-	if (line.rfind("set", 0) == 0){ std::cout << "'set <variableName> <value>'. Later accessible when entering <variableName>. I.e 'set N 10'" << std::endl; }
-	else{ // We are gonna guess what the user is entering
-		std::map<std::string, std::string> possibleCommands;
-		int sameAmount = 0;
-		for (auto e:this->commands){ // Investigating if its a command
-			for (unsigned int i = 0; i < line.size(); i++){ 
-				if (e.first[i] == line[i]){ sameAmount++; }
-				if ((i+1) >= e.first.size() && (i+1) < line.size()){ sameAmount = 0; break; } // is there more left on the user input then the amount of chars that the function has in its name?	
-			}
-			if ((sameAmount != 0) && (-1 < line.size() - sameAmount <= 3)){ possibleCommands[e.first] = "command"; }
+	// We are gonna guess what the user is entering
+	std::map<std::string, std::string> possibleCommands;
+	int sameAmount = 0;
+	for (auto e:this->commands){ // Investigating if its a command
+		for (unsigned int i = 0; i < line.size(); i++){ 
+			if (e.first[i] == line[i]){ sameAmount++; }
+			if ((i+1) >= e.first.size() && (i+1) < line.size()){ sameAmount = 0; break; } // is there more left on the user input then the amount of chars that the function has in its name?	
 		}
+		if ((sameAmount != 0) && (-1 < line.size() - sameAmount <= 3)){ possibleCommands[e.first] = "command"; }
+	}
 
-		for (auto e:this->variables){ // or if its a variable
-			for (unsigned int i = 0; i < line.size(); i++){
-				if (e.first[i] == line[i]){ sameAmount++; }
-				if ((i+1) >= e.first.size() && (i+1) < line.size()){ sameAmount = 0; break; }				
-			}
-			if ((sameAmount != 0) && (-1 < line.size() - sameAmount <= 3)){ possibleCommands[e.first] = "variable"; }
+	for (auto e:this->variables){ // or if its a variable
+		for (unsigned int i = 0; i < line.size(); i++){
+			if (e.first[i] == line[i]){ sameAmount++; }
+			if ((i+1) >= e.first.size() && (i+1) < line.size()){ sameAmount = 0; break; }				
 		}
-
-		std::cout << "Possible commands are" << std::endl;
+		if ((sameAmount != 0) && (-1 < line.size() - sameAmount <= 3)){ possibleCommands[e.first] = "variable"; }
+	}
+		
+	if (possibleCommands.size() > 0){ // Now to list them all
+			std::cout << "Possible commands are" << std::endl;
 		for(int i = 0; i < this->lineBreakerAmount; i++){ std::cout << this->lineBreaker; }
 		std::cout << std::endl;
 		for(auto e:possibleCommands){ std::cout << "* " << e.first << " [" << e.second << "]" << std::endl; }
 		std::cout << std::endl;	
-		for(int i = 0; i < this->lineBreakerAmount; i++){ std::cout << this->lineBreaker; }
-		std::cout << std::endl;		
+		for(int i = 0; i < this->lineBreakerAmount; i++){ std::cout << this->lineBreaker; }			std::cout << std::endl;		
 	}
 }
 
 std::vector<std::string> interactiveShell::getArgs(std::string functionName){
 	std::vector<std::string> passedArguments;
-	for (auto e:this->commands){ 
-		if (e.first == functionName){
-			passedArguments = this->passedArgs[functionName];
-			break;	
-		}
-	}
+	auto commandPos = this->passedArgs.find(functionName);
+	if (commandPos != this->passedArgs.end()){ passedArguments = commandPos->second; }
 	return passedArguments;
 }
 
+// ------------ Return statements ------------
+
+void interactiveShell::setReturnValue(std::string functionName, std::string returnValue){
+	auto pos = this->returnedArgs.find(functionName);
+	if (pos == this->returnedArgs.end()){ this->returnedArgs[functionName] = returnValue; } // New entry
+	else{ pos->second = returnValue; } // Update an old entry
+}
+
+
+std::string interactiveShell::getReturnValue(std::string functionName){
+	std::string toReturn = "none";
+	auto pos = this->returnedArgs.find(functionName);
+	if (pos != this->returnedArgs.end()){ toReturn = pos->second; }
+	return toReturn;
+}
+
+// ------------  ------------
+
+void interactiveShell::showHistory(std::string amount){
+	unsigned int roof = 0;
+	try{ roof = std::stoi(amount); }
+	catch(std::exception &e){ std::cerr << "Error: Invalid value " << amount << std::endl; }
+	for (unsigned int i = 0; (i < roof) && (i < this->history.size()) ; i++){
+		std::cout << i+1 << ") " << history[i] << std::endl;
+	}		
+}
+void interactiveShell::showHistory(){ this->showHistory("10"); }
 
 #endif
